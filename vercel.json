@@ -1,12 +1,6 @@
 {
   "name": "coccinelle-ai",
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -106,4 +100,4 @@
       "NEXT_PUBLIC_APP_ENV": "production"
     }
   }
-} 
+}
