@@ -217,9 +217,9 @@ export default function InscriptionPage() {
                           {sector.id === 'santé' && '🏥 Santé & Médical'}
                           {sector.id === 'finance' && '💰 Finance & Banque'}
                           {sector.id === 'immobilier' && '🏠 Immobilier'}
-                          {sector === 'automotive' && '🚗 Automobile'}
-                          {sector === 'education' && '🎓 Éducation'}
-                          {sector === 'b2b' && '🏢 B2B Services'}
+                          {sector.id === 'automobile' && '🚗 Automobile'}
+                          {sector.id === 'éducation' && '🎓 Éducation'}
+                          {sector.id === 'b2b-services' && '🏢 B2B Services'}
                         </option>
                       ))}
                     </select>
