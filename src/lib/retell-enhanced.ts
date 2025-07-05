@@ -33,6 +33,33 @@ export const RETELL_ENHANCED_INFRASTRUCTURE = {
   supportNumber: "+33 1 XX XX XX XX"
 };
 
+// Configuration des secteurs
+export const SECTOR_CONFIGS = {
+  "e-commerce": { name: "E-commerce", icon: "🛒" },
+  "santé": { name: "Santé", icon: "🏥" },
+  "finance": { name: "Finance", icon: "💰" },
+  "immobilier": { name: "Immobilier", icon: "🏠" },
+  "automobile": { name: "Automobile", icon: "🚗" },
+  "éducation": { name: "Éducation", icon: "🎓" },
+  "b2b-services": { name: "B2B Services", icon: "🏢" }
+};
+
+// Interface pour les secteurs
+export interface BusinessSector {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+// Fonction pour récupérer tous les secteurs
+export function getAllSectors(): BusinessSector[] {
+  return Object.entries(SECTOR_CONFIGS).map(([key, config]) => ({
+    id: key,
+    name: config.name,
+    icon: config.icon
+  }));
+}
+
 // Types pour TypeScript
 export interface RetellConfig {
   twilioNumber: string;
