@@ -212,7 +212,7 @@ export default function InscriptionPage() {
                       className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {sectors.map((sector) => (
-                        <option key={sector} value={sector}>
+                        <option key={sector.id} value={sector.id}>
                           {sector === 'ecommerce' && '🛒 E-commerce & Retail'}
                           {sector === 'healthcare' && '🏥 Santé & Médical'}
                           {sector === 'finance' && '💰 Finance & Banque'}
