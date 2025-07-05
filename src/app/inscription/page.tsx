@@ -213,10 +213,10 @@ export default function InscriptionPage() {
                     >
                       {sectors.map((sector) => (
                         <option key={sector.id} value={sector.id}>
-                          {sector === 'ecommerce' && '🛒 E-commerce & Retail'}
-                          {sector === 'healthcare' && '🏥 Santé & Médical'}
-                          {sector === 'finance' && '💰 Finance & Banque'}
-                          {sector === 'realestate' && '🏠 Immobilier'}
+                          {sector.id === 'e-commerce' && '🛒 E-commerce & Retail'}
+                          {sector.id === 'santé' && '🏥 Santé & Médical'}
+                          {sector.id === 'finance' && '💰 Finance & Banque'}
+                          {sector.id === 'immobilier' && '🏠 Immobilier'}
                           {sector === 'automotive' && '🚗 Automobile'}
                           {sector === 'education' && '🎓 Éducation'}
                           {sector === 'b2b' && '🏢 B2B Services'}
