@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
                     temperature: 0.7
                 })
 
-                personalizedMessage = aiResponse.choices[0].message.content
+                personalizedMessage = aiResponse.choices[0].message.content || personalizedMessage
                 console.log('🤖 Message IA généré')
 
             } catch (aiError) {
