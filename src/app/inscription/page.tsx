@@ -20,7 +20,7 @@ export default function InscriptionPage() {
     email: '',
     password: '',
     company: '',
-    sector: sector: 'e-commerce',
+    sector: 'e-commerce',
     phone: '',
     employees: '1-10'
   });
