@@ -24,7 +24,7 @@ import RetellPhoneWidget from '@/components/RetellPhoneWidget';
  */
 
 export default function HomePage() {
-  const [activeSector, setActiveSector] = useState<BusinessSector>('realestate');
+  const [activeSector, setActiveSector] = useState<string>('immobilier');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sectors = getAllSectors();
 
