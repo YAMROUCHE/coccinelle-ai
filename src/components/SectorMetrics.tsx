@@ -27,7 +27,7 @@ interface Metric {
 }
 
 export default function SectorMetrics({ sector, className = '' }: SectorMetricsProps) {
-  const sectorConfig = SECTOR_CONFIGS(sector);
+  const sectorConfig = SECTOR_CONFIGS[sector];
 
   // Métriques par secteur
   const getSectorMetrics = (sector: BusinessSector): Metric[] => {
