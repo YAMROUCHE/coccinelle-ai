@@ -25,7 +25,7 @@ export default function ChatWidget({ sector = 'e-commerce', className = '' }: Ch
   }>>([
     {
       id: '1',
-      text: `Bonjour ! Je suis l'agent IA coccinelle.ai spécialisé ${sector === 'ecommerce' ? 'e-commerce' : sector === 'healthcare' ? 'santé' : sector === 'finance' ? 'finance' : sector === 'realestate' ? 'immobilier' : 'votre secteur'}. Comment puis-je vous aider aujourd'hui ?`,
+      text: `Bonjour ! Je suis l'agent IA coccinelle.ai spécialisé ${sector === 'e-commerce' ? 'e-commerce' : sector === 'santé' ? 'santé' : sector === 'finance' ? 'finance' : sector === 'immobilier' ? 'immobilier' : 'votre secteur'}. Comment puis-je vous aider aujourd'hui ?`,
       sender: 'ai',
       timestamp: new Date()
     }
@@ -61,45 +61,45 @@ export default function ChatWidget({ sector = 'e-commerce', className = '' }: Ch
   };
 
   const generateAIResponse = (message: string, currentSector: string): string => {
-    const responses: Record<BusinessSector, string[]> = {
-      ecommerce: [
+    const responses: Record<string, string[]> = {
+      'e-commerce': [
         "Je peux vous aider avec vos commandes, le suivi de livraison, ou toute question sur nos produits. Que souhaitez-vous savoir ?",
         "Pour votre commande, je peux vérifier le stock en temps réel et vous proposer des alternatives si nécessaire.",
         "Je vois que vous avez des questions sur notre politique de retour. Je peux vous expliquer le processus en détail."
       ],
-      healthcare: [
+      'santé': [
         "Je peux vous aider à prendre un rendez-vous ou répondre à vos questions médicales générales. Avez-vous besoin d'une consultation ?",
         "Pour votre rendez-vous, je peux vérifier les disponibilités et vous proposer les créneaux les plus adaptés.",
         "Je comprends votre préoccupation. Je peux vous orienter vers le bon spécialiste selon vos besoins."
       ],
-      finance: [
+      'finance': [
         "Je peux vous aider avec vos questions financières et vous orienter vers les services appropriés. Que recherchez-vous ?",
         "Pour votre demande de crédit, je peux vous expliquer les conditions et vous guider dans le processus.",
         "Je peux vous informer sur nos produits d'épargne et d'investissement adaptés à votre profil."
       ],
-      realestate: [
+      'immobilier': [
         "Je peux vous aider à trouver le bien immobilier idéal ou répondre à vos questions sur l'immobilier. Que recherchez-vous ?",
         "Pour votre recherche, je peux vous proposer des biens correspondant à vos critères et organiser des visites.",
         "Je peux vous accompagner dans votre projet d'achat ou de location avec une expertise personnalisée."
       ],
-      automotive: [
+      'automobile': [
         "Je peux vous aider avec vos questions automobiles, la prise de rendez-vous pour entretien ou réparation. Que souhaitez-vous ?",
         "Pour votre véhicule, je peux vérifier les disponibilités et vous proposer les créneaux d'entretien les plus adaptés.",
         "Je peux vous informer sur nos services automobiles et vous accompagner dans vos démarches."
       ],
-      education: [
+      'éducation': [
         "Je peux vous aider avec vos questions sur l'éducation, l'inscription ou l'orientation. Que recherchez-vous ?",
         "Pour votre inscription, je peux vous guider dans le processus et répondre à vos questions.",
         "Je peux vous informer sur nos programmes éducatifs et vous accompagner dans votre parcours."
       ],
-      b2b: [
+      'b2b-services': [
         "Je peux vous aider avec vos questions B2B et vous orienter vers les services appropriés. Que recherchez-vous ?",
         "Pour votre entreprise, je peux vous proposer des solutions adaptées à vos besoins.",
         "Je peux vous accompagner dans vos démarches B2B avec une expertise personnalisée."
       ]
     };
 
-    const sectorResponses = responses[currentSector];
+    const sectorResponses = responses[currentSector] || responses['e-commerce'];
     return sectorResponses[Math.floor(Math.random() * sectorResponses.length)];
   };
 
@@ -230,4 +230,4 @@ export default function ChatWidget({ sector = 'e-commerce', className = '' }: Ch
       </AnimatePresence>
     </>
   );
-} 
+}
