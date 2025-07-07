@@ -15,7 +15,7 @@ interface ChatWidgetProps {
   className?: string;
 }
 
-export default function ChatWidget({ sector = 'ecommerce', className = '' }: ChatWidgetProps) {
+export default function ChatWidget({ sector = 'e-commerce', className = '' }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{
     id: string;
