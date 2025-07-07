@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, Target, Zap } from 'lucide-react';
-import { getSectorConfig, type BusinessSector } from '@/lib/retell-enhanced';
+import { SECTOR_CONFIGS, type BusinessSector } from '@/lib/retell-enhanced';
 
 interface MetricData {
   label: string;
@@ -27,7 +27,7 @@ interface Metric {
 }
 
 export default function SectorMetrics({ sector, className = '' }: SectorMetricsProps) {
-  const sectorConfig = getSectorConfig(sector);
+  const sectorConfig = SECTOR_CONFIGS(sector);
 
   // Métriques par secteur
   const getSectorMetrics = (sector: BusinessSector): Metric[] => {
