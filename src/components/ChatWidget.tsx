@@ -11,7 +11,7 @@ import {
 import { type BusinessSector } from '@/lib/retell-enhanced';
 
 interface ChatWidgetProps {
-  sector?: BusinessSector;
+  sector?: string;
   className?: string;
 }
 
