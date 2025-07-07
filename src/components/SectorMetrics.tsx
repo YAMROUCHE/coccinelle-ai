@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, Target, Zap } from 'lucide-react';
-import { SECTOR_CONFIGS, type BusinessSector } from '@/lib/retell-enhanced';
+import { SECTOR_CONFIGS } from '@/lib/retell-enhanced';
 
 interface MetricData {
   label: string;
@@ -13,7 +13,7 @@ interface MetricData {
 }
 
 interface SectorMetricsProps {
-  sector: BusinessSector;
+  sector: string;
   metrics?: MetricData[];
   className?: string;
 }
@@ -27,12 +27,12 @@ interface Metric {
 }
 
 export default function SectorMetrics({ sector, className = '' }: SectorMetricsProps) {
-  const sectorConfig = SECTOR_CONFIGS[sector];
+  const sectorConfig = SECTOR_CONFIGS[sector as keyof typeof SECTOR_CONFIGS] || SECTOR_CONFIGS['e-commerce'];
 
   // Métriques par secteur
-  const getSectorMetrics = (sector: BusinessSector): Metric[] => {
-    const metrics = {
-      ecommerce: [
+  const getSectorMetrics = (currentSector: string): Metric[] => {
+    const metrics: Record<string, Metric[]> = {
+      'e-commerce': [
         {
           label: 'Taux de Conversion',
           value: '+156%',
@@ -62,7 +62,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      healthcare: [
+      'santé': [
         {
           label: 'RDV Confirmés',
           value: '+95%',
@@ -92,7 +92,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      finance: [
+      'finance': [
         {
           label: 'Leads Qualifiés',
           value: '+89%',
@@ -122,7 +122,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      realestate: [
+      'immobilier': [
         {
           label: 'Prospects Qualifiés',
           value: '+145%',
@@ -152,7 +152,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      automotive: [
+      'automobile': [
         {
           label: 'RDV Entretien',
           value: '+78%',
@@ -182,7 +182,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      education: [
+      'éducation': [
         {
           label: 'Inscriptions',
           value: '+82%',
@@ -212,7 +212,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
           description: 'Latence moyenne avec Fast Tier'
         }
       ],
-      b2b: [
+      'b2b-services': [
         {
           label: 'Leads Qualifiés',
           value: '+73%',
@@ -244,7 +244,7 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
       ]
     };
 
-    return metrics[sector] || metrics.b2b;
+    return metrics[currentSector] || metrics['b2b-services'];
   };
 
   const metrics = getSectorMetrics(sector);
@@ -324,4 +324,4 @@ export default function SectorMetrics({ sector, className = '' }: SectorMetricsP
       </motion.div>
     </div>
   );
-} 
+}
