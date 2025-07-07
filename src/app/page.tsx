@@ -73,7 +73,7 @@ export default function HomePage() {
             <div className="flex flex-wrap justify-center gap-3 mb-8">
               {sectors.map((sector) => (
                 <span key={sector.id} className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 text-sm font-medium">
-                  {SECTOR_CONFIGS[sector.id].icon} {SECTOR_CONFIGS[sector.id].name}
+                  {sector.icon} {sector.name}
                 </span>
               ))}
             </div>
