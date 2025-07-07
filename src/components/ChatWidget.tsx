@@ -60,7 +60,7 @@ export default function ChatWidget({ sector = 'e-commerce', className = '' }: Ch
     }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
   };
 
-  const generateAIResponse = (message: string, currentSector: BusinessSector): string => {
+  const generateAIResponse = (message: string, currentSector: string): string => {
     const responses: Record<BusinessSector, string[]> = {
       ecommerce: [
         "Je peux vous aider avec vos commandes, le suivi de livraison, ou toute question sur nos produits. Que souhaitez-vous savoir ?",
