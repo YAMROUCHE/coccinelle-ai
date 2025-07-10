@@ -1,8 +1,25 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
   try {
+    // Vérifier que les variables existent
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ 
+        error: 'Configuration Supabase manquante',
+        debug: {
+          hasUrl: !!supabaseUrl,
+          hasKey: !!supabaseKey
+        }
+      }, { status: 500 })
+    }
+
+    // Créer le client Supabase seulement si les variables existent
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     // Récupérer tous les biens avec l'agence
     const { data: properties, error } = await supabase
       .from('properties')
