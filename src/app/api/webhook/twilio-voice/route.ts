@@ -1,6 +1,18 @@
 // src/app/api/webhook/twilio-voice/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
+// Cache simple en mémoire pour réduire la latence
+const responseCache = new Map<string, any>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+// Paramètres voix inspirés de ton Retell.ai JSON
+const VOICE_CONFIG = {
+  voice: "Polly.Celine",
+  rate: "1.12", // voice_speed de ton Retell.ai
+  volume: "1.9", // volume de ton Retell.ai  
+  temperature: "0.9" // voice_temperature de ton Retell.ai
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
@@ -8,31 +20,33 @@ export async function POST(request: NextRequest) {
     const speechResult = params.get('SpeechResult')
     const confidence = params.get('Confidence')
     const from = params.get('From') || 'Numéro inconnu'
-    
-    console.log('🎤 Appel Twilio reçu:', {
-      speechResult,
-      confidence,
-      from,
-      bodyParams: body.substring(0, 200)
-    })
+    const callSid = params.get('CallSid') || 'unknown'
 
-    // Premier appel - Salutation et demande
+    console.log('🎤 Appel Twilio reçu:', { speechResult, confidence, from, callSid })
+
+    // Premier appel - Salutation avec paramètres Retell.ai
     if (!speechResult || speechResult.trim() === '') {
       const welcomeTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Bonjour ! Vous êtes en ligne avec Coccinelle point A I, votre agence immobilière intelligente. Je suis votre assistante IA et je peux vous aider à trouver le bien de vos rêves. Dites-moi ce que vous recherchez.
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="${VOICE_CONFIG.rate}" volume="${VOICE_CONFIG.volume}" pitch="+3%">
+      Bonjour ! Coccinelle point A I, votre agence immobilière intelligente. Je peux vous aider à trouver votre bien idéal. Que recherchez-vous ?
+    </prosody>
   </Say>
   <Gather input="speech" 
           language="fr-FR" 
-          speechTimeout="5" 
-          timeout="10"
+          speechTimeout="3" 
+          timeout="8"
           action="https://coccinelle-ai.vercel.app/api/webhook/twilio-voice"
           method="POST">
-    <Say voice="Polly.Celine" language="fr-FR">Je vous écoute...</Say>
+    <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+      <prosody rate="1.05" volume="${VOICE_CONFIG.volume}">Je vous écoute...</prosody>
+    </Say>
   </Gather>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Je n'ai pas bien entendu. Pour plus d'informations, contactez-nous au 05 82 95 27 87. Au revoir !
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="1.0" volume="${VOICE_CONFIG.volume}">
+      Contactez-nous au 05 82 95 27 87. Au revoir !
+    </prosody>
   </Say>
 </Response>`
 
@@ -40,15 +54,25 @@ export async function POST(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'text/xml; charset=utf-8',
+          'Cache-Control': 'no-cache',
         },
       })
     }
 
-    // Traitement de la réponse avec l'IA
-    console.log(`🗣️ Parole détectée: "${speechResult}" (confiance: ${confidence})`)
+    // Vérifier cache pour réponses similaires (optimisation latence)
+    const cacheKey = speechResult.toLowerCase().trim()
+    const cached = responseCache.get(cacheKey)
+    
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log('📋 Réponse depuis cache:', cacheKey)
+      return new NextResponse(cached.twiml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml; charset=utf-8' }
+      })
+    }
 
-    // Vérifier les mots de fin
-    const endWords = ['merci', 'au revoir', 'goodbye', 'bye', 'stop', 'terminer', 'fini', 'c\'est tout']
+    // Vérifier les mots de fin (optimisé)
+    const endWords = ['merci', 'au revoir', 'bye', 'stop', 'fini', 'c\'est tout', 'termine']
     const shouldEnd = speechResult && endWords.some(word => 
       speechResult.toLowerCase().includes(word)
     )
@@ -57,114 +81,128 @@ export async function POST(request: NextRequest) {
       console.log('🔚 Fin de conversation détectée')
       const goodbyeTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Merci pour votre appel ! Pour organiser une visite ou obtenir plus d'informations, contactez-nous au 05 82 95 27 87. Excellente journée !
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="${VOICE_CONFIG.rate}" volume="${VOICE_CONFIG.volume}" pitch="+2%">
+      Merci pour votre appel ! Pour organiser une visite, contactez-nous au 05 82 95 27 87. Excellente journée !
+    </prosody>
   </Say>
 </Response>`
 
       return new NextResponse(goodbyeTwiml, {
         status: 200,
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-        },
+        headers: { 'Content-Type': 'text/xml; charset=utf-8' }
       })
     }
 
-    // APPEL À TON IA IMMOBILIERE (seulement si on a du texte)
+    // APPEL IA OPTIMISÉ avec timeout réduit
     if (speechResult && speechResult.trim() !== '') {
-      console.log('🤖 Appel à l\'IA immobilière...')
-      const aiResponse = await fetch('https://coccinelle-ai.vercel.app/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: speechResult,
-          prospectInfo: {
-            phone: from,
-            source: 'twilio_voice_call',
-            confidence: confidence
-          }
-        })
-      })
-
-    if (aiResponse.ok) {
-      const aiData = await aiResponse.json()
-      console.log('✅ Réponse IA reçue:', aiData.response)
+      console.log('🤖 Appel IA optimisé...')
       
-      let responseText = aiData.response
-
-      // Enrichir avec les biens trouvés
-      if (aiData.matchingProperties?.length > 0) {
-        const property = aiData.matchingProperties[0]
-        const priceText = property.transaction_type === 'rent' 
-          ? `${property.price} euros par mois` 
-          : `${property.price} euros`
-        
-        responseText += ` Nous avons trouvé pour vous ${property.title}, au prix de ${priceText}, d'une surface de ${property.surface_area} mètres carrés, situé ${property.address}.`
-        
-        // Ajouter d'autres biens s'il y en a
-        if (aiData.matchingProperties.length > 1) {
-          responseText += ` Nous avons également ${aiData.matchingProperties.length - 1} autre${aiData.matchingProperties.length > 2 ? 's' : ''} bien${aiData.matchingProperties.length > 2 ? 's' : ''} qui pourrai${aiData.matchingProperties.length > 2 ? 'ent' : 't'} vous intéresser.`
-        }
-      }
-
-      // Nettoyer le texte pour TwiML (enlever caractères spéciaux)
-      const cleanText = responseText
-        .replace(/[<>&"']/g, (match) => {
-          const entities: { [key: string]: string } = {
-            '<': '', '>': '', '&': 'et', '"': '', "'": ''
-          }
-          return entities[match]
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3s timeout
+      
+      try {
+        const aiResponse = await fetch('https://coccinelle-ai.vercel.app/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: speechResult,
+            prospectInfo: {
+              phone: from,
+              source: 'twilio_voice_optimized',
+              confidence: confidence,
+              callSid: callSid
+            }
+          }),
+          signal: controller.signal
         })
-        .replace(/\s+/g, ' ')
-        .trim()
 
-      // Continuer la conversation
-      const conversationTwiml = `<?xml version="1.0" encoding="UTF-8"?>
+        clearTimeout(timeoutId)
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json()
+          console.log('✅ Réponse IA reçue (optimisée)')
+          
+          let responseText = aiData.response
+
+          // Enrichissement optimisé avec biens trouvés
+          if (aiData.matchingProperties?.length > 0) {
+            const property = aiData.matchingProperties[0]
+            const priceText = property.transaction_type === 'rent' 
+              ? `${property.price} euros par mois` 
+              : `${property.price} euros`
+            
+            responseText += ` Nous avons ${property.title} à ${priceText}, ${property.surface_area} m², ${property.address}.`
+            
+            if (aiData.matchingProperties.length > 1) {
+              responseText += ` Plus ${aiData.matchingProperties.length - 1} autre${aiData.matchingProperties.length > 2 ? 's' : ''} bien${aiData.matchingProperties.length > 2 ? 's' : ''} disponible${aiData.matchingProperties.length > 2 ? 's' : ''}.`
+            }
+          }
+
+          // Nettoyage optimisé du texte
+          const cleanText = responseText
+            .replace(/[<>&"']/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 400) // Limiter pour réduire latence
+
+          // SSML optimisé pour voix naturelle (paramètres exacts Retell.ai)
+          const conversationTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Celine" language="fr-FR">
-    ${cleanText}
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="${VOICE_CONFIG.rate}" volume="${VOICE_CONFIG.volume}" pitch="+5%">
+      ${cleanText}
+    </prosody>
   </Say>
   <Gather input="speech" 
           language="fr-FR" 
-          speechTimeout="8" 
-          timeout="15"
+          speechTimeout="4" 
+          timeout="10"
           action="https://coccinelle-ai.vercel.app/api/webhook/twilio-voice"
           method="POST">
-    <Say voice="Polly.Celine" language="fr-FR">
-      Avez-vous d'autres questions ou souhaitez-vous plus de détails sur un bien en particulier ?
+    <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+      <prosody rate="1.05" volume="${VOICE_CONFIG.volume}">
+        Avez-vous d'autres questions sur nos biens ?
+      </prosody>
     </Say>
   </Gather>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Pour organiser une visite, contactez-nous au 05 82 95 27 87. Merci et à bientôt !
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="1.0" volume="${VOICE_CONFIG.volume}">
+      Contactez-nous au 05 82 95 27 87. Merci et à bientôt !
+    </prosody>
   </Say>
 </Response>`
 
-      return new NextResponse(conversationTwiml, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-        },
-      })
-    } else {
-      console.error('❌ Erreur appel IA:', aiResponse.status)
-    }
-    } else {
-      console.log('⚠️ Pas de texte reçu de la reconnaissance vocale')
+          // Mettre en cache la réponse (optimisation)
+          responseCache.set(cacheKey, {
+            twiml: conversationTwiml,
+            timestamp: Date.now()
+          })
+
+          return new NextResponse(conversationTwiml, {
+            status: 200,
+            headers: { 'Content-Type': 'text/xml; charset=utf-8' }
+          })
+        }
+      } catch (error) {
+        clearTimeout(timeoutId)
+        console.error('❌ Erreur IA ou timeout:', error)
+      }
     }
 
-    // Fallback en cas d'erreur IA
+    // Fallback optimisé
     const fallbackTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Je rencontre une petite difficulté technique. Pour être mis en relation avec un conseiller, appelez-nous directement au 05 82 95 27 87. Merci de votre compréhension.
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="${VOICE_CONFIG.rate}" volume="${VOICE_CONFIG.volume}">
+      Je rencontre une difficulté. Pour être mis en relation, appelez le 05 82 95 27 87. Merci.
+    </prosody>
   </Say>
 </Response>`
 
     return new NextResponse(fallbackTwiml, {
       status: 200,
-      headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-      },
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' }
     })
 
   } catch (error) {
@@ -172,31 +210,34 @@ export async function POST(request: NextRequest) {
     
     const errorTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Celine" language="fr-FR">
-    Erreur technique. Contactez-nous au 05 82 95 27 87. Au revoir.
+  <Say voice="${VOICE_CONFIG.voice}" language="fr-FR">
+    <prosody rate="1.0" volume="${VOICE_CONFIG.volume}">
+      Erreur technique. Contactez le 05 82 95 27 87. Au revoir.
+    </prosody>
   </Say>
 </Response>`
     
     return new NextResponse(errorTwiml, {
       status: 200,
-      headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-      },
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' }
     })
   }
 }
 
 export async function GET() {
   return NextResponse.json({ 
-    message: 'Agent IA Conversationnel Immobilier Complet',
+    message: 'Agent IA Twilio Optimisé - Paramètres Retell.ai',
     status: 'active',
-    features: [
-      'Voix française naturelle (Polly.Celine)',
-      'Reconnaissance vocale temps réel',
-      'IA conversationnelle intégrée',
-      'Recherche de biens immobiliers',
-      'Gestion de conversation fluide',
-      'Détection de fin de conversation'
-    ]
+    voice_config: VOICE_CONFIG,
+    optimizations: [
+      'Cache réponses similaires (5min)',
+      'Timeout IA réduit (3s)',
+      'Voix Polly.Celine avec paramètres Retell.ai',
+      'voice_speed: 1.12 (comme Retell.ai)',
+      'volume: 1.9 (comme Retell.ai)',
+      'speechTimeout optimisé (3-4s)',
+      'Texte limité 400 chars'
+    ],
+    elevenlabs_integration: 'Disponible via endpoint séparé'
   })
 }
