@@ -3,19 +3,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const speechResult = formData.get('SpeechResult') as string
-    const confidence = formData.get('Confidence') as string
-    const from = formData.get('From') as string || 'Numéro inconnu'
+    const body = await request.text()
+    const params = new URLSearchParams(body)
+    const speechResult = params.get('SpeechResult')
+    const confidence = params.get('Confidence')
+    const from = params.get('From') || 'Numéro inconnu'
     
     console.log('🎤 Appel Twilio reçu:', {
       speechResult,
       confidence,
-      from
+      from,
+      bodyParams: body.substring(0, 200)
     })
 
     // Premier appel - Salutation et demande
-    if (!speechResult) {
+    if (!speechResult || speechResult.trim() === '') {
       const welcomeTwiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Celine" language="fr-FR">
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Vérifier les mots de fin
     const endWords = ['merci', 'au revoir', 'goodbye', 'bye', 'stop', 'terminer', 'fini', 'c\'est tout']
-    const shouldEnd = endWords.some(word => 
+    const shouldEnd = speechResult && endWords.some(word => 
       speechResult.toLowerCase().includes(word)
     )
 
@@ -68,20 +70,21 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // APPEL À TON IA IMMOBILIERE
-    console.log('🤖 Appel à l\'IA immobilière...')
-    const aiResponse = await fetch('https://coccinelle-ai.vercel.app/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: speechResult,
-        prospectInfo: {
-          phone: from,
-          source: 'twilio_voice_call',
-          confidence: confidence
-        }
+    // APPEL À TON IA IMMOBILIERE (seulement si on a du texte)
+    if (speechResult && speechResult.trim() !== '') {
+      console.log('🤖 Appel à l\'IA immobilière...')
+      const aiResponse = await fetch('https://coccinelle-ai.vercel.app/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: speechResult,
+          prospectInfo: {
+            phone: from,
+            source: 'twilio_voice_call',
+            confidence: confidence
+          }
+        })
       })
-    })
 
     if (aiResponse.ok) {
       const aiData = await aiResponse.json()
@@ -144,6 +147,9 @@ export async function POST(request: NextRequest) {
       })
     } else {
       console.error('❌ Erreur appel IA:', aiResponse.status)
+    }
+    } else {
+      console.log('⚠️ Pas de texte reçu de la reconnaissance vocale')
     }
 
     // Fallback en cas d'erreur IA
